@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 053ef270aa2dae0429de5f04ea1449a6
+timeCreated: 1484399384
+licenseType: Free
+ShaderImporter:
+  defaultTextures:
+  - iChannel0: {fileID: 2800000, guid: 0b1230a67832cf248b8301709a933f7d, type: 3}
+  - iChannel1: {fileID: 2800000, guid: 0b1230a67832cf248b8301709a933f7d, type: 3}
+  - iChannel2: {instanceID: 0}
+  - iChannel3: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
