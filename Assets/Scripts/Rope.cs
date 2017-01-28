@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 
 public class Rope : MonoBehaviour
@@ -14,8 +15,10 @@ public class Rope : MonoBehaviour
 
     public GameObject NodePrefab;
 
+    [HideInInspector()]
     public GameObject Thrower;
 
+    [HideInInspector()]
     public GameObject LastNode;
 
     private bool _done = false;
@@ -32,16 +35,6 @@ public class Rope : MonoBehaviour
 	void Update ()
 	{
 
-	    //transform.position = Vector2.MoveTowards(transform.position, Destiny, Speed);
-
-	    //if (!_shot)
-	    //{
-	    //    _shot = true;
-     //       GetComponent<Rigidbody2D>().AddForce(Vector2.MoveTowards(transform.position, Destiny, Speed));
-	    //}
-
-
-
 	    if (_curLength < MaxLength) //(Vector2) transform.position != Destiny)
 	    {
 	        var distanceLastNodeToThrower = Vector2.Distance(Thrower.transform.position, LastNode.transform.position);
@@ -54,8 +47,12 @@ public class Rope : MonoBehaviour
 	    else if (_done == false)
 	    {
 	        _done = true;
-
+            if (LastNode.GetComponent<HingeJoint2D>() == null)
+            {
+                AddJoind2D(LastNode);
+            }
             LastNode.GetComponent<HingeJoint2D>().connectedBody = Thrower.GetComponent<Rigidbody2D>();
+            //Thrower.GetComponent<Joint2D>().connectedBody = LastNode.GetComponent<Rigidbody2D>();
             //LastNode.transform.SetParent(Thrower.transform);
 	    }
 
@@ -75,9 +72,27 @@ public class Rope : MonoBehaviour
         //LastNode.transform.SetParent(newNode.transform);
 
         // Connect last Hinge
+        if (LastNode.GetComponent<HingeJoint2D>() == null)
+        {
+            AddJoind2D(LastNode);
+        }
+
         LastNode.GetComponent<HingeJoint2D>().connectedBody = newNode.GetComponent<Rigidbody2D>();
+        //LastNode.GetComponent<DistanceJoint2D>().connectedBody = newNode.GetComponent<Rigidbody2D>();
 
         LastNode = newNode;
         _curLength++;
+    }
+
+    private void AddJoind2D(GameObject targetGameObject)
+    {
+        targetGameObject.AddComponent<HingeJoint2D>();
+        
+        //Configure
+        LastNode.GetComponent<HingeJoint2D>().autoConfigureConnectedAnchor = false;
+        //LastNode.GetComponent<HingeJoint2D>().maxDistanceOnly = true;
+        //LastNode.GetComponent<HingeJoint2D>().distance = Distance;
+        //LastNode.GetComponent<HingeJoint2D>().autoConfigureDistance = false;
+
     }
 }

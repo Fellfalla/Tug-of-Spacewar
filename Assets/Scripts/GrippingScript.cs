@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(FixedJoint2D))]
 public class GrippingScript : MonoBehaviour
 {
     private FixedJoint2D _grippingJoint;
@@ -10,7 +11,9 @@ public class GrippingScript : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
+
         _grippingJoint = GetComponent<FixedJoint2D>();
+	    _grippingJoint.enabled = false;
 	}
 	
 	// Update is called once per frame
