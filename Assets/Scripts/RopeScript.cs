@@ -18,10 +18,10 @@ public class RopeScript : MonoBehaviour
     [Range(0.0f, 1)]
     public float Damping = 0.01f;
 
-    [Range(0.001f, 100)]
+    [Range(0.001f, 5)]
     public float Elasticity = 0.001f;
 
-    [Range(1, 100)]
+    [Range(1, 50)]
     public int SegmentCount;
 
     private GameObject[] _segments;
@@ -144,8 +144,8 @@ public class RopeScript : MonoBehaviour
         obj2.GetComponent<Rigidbody2D>().AddForce(force2);
         obj1.GetComponent<Rigidbody2D>().AddForce(force1);
 
-        //Debug.DrawRay(obj2.transform.position, force2, Color.blue);
-        //Debug.DrawRay(obj1.transform.position, force1, Color.blue);
+        Debug.DrawRay(obj2.transform.position, force2/100, Color.blue);
+        Debug.DrawRay(obj1.transform.position, force1/100, Color.blue);
 	    
         //obj2.transform.Translate(Vector3.Lerp(Vector3.zero, exceeding, Elasticity));
 	    //}
@@ -158,11 +158,16 @@ public class RopeScript : MonoBehaviour
         var vel2 = obj1.GetComponent<Rigidbody2D>().velocity;
         var relativeVelocity = vel2 - vel1;
 
-        var dampingAmout = relativeVelocity.sqrMagnitude*Damping;
+        //var dampingAmout = relativeVelocity.sqrMagnitude*Damping;
 
+        var dampingForce1 = - relativeVelocity * Damping;
+        var dampingForce2 = -dampingForce1;
 
-        obj2.GetComponent<Rigidbody2D>().AddForce(- vel2 * dampingAmout);
-        obj1.GetComponent<Rigidbody2D>().AddForce(- vel1 * dampingAmout);
+        Debug.DrawRay(obj1.transform.position, dampingForce1, Color.blue);
+        Debug.DrawRay(obj2.transform.position, dampingForce2, Color.blue);
+
+        obj1.GetComponent<Rigidbody2D>().AddForce(dampingForce1);
+        obj2.GetComponent<Rigidbody2D>().AddForce(dampingForce2);
     }
 
     void UpdateLineRendererPositions()
