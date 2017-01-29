@@ -15,7 +15,7 @@ public class RopeScript : MonoBehaviour
     public float Mass = 1;
 
 
-    [Range(0.0001f, 1)]
+    [Range(0.0f, 1)]
     public float Damping = 0.01f;
 
     [Range(0.001f, 100)]
@@ -54,6 +54,15 @@ public class RopeScript : MonoBehaviour
 
     void InitSegments()
     {
+        // Delete old Nodes
+        //for (int i = 0; i < _segments.Length; i++)
+        //{
+        //    if (_segments[i] != null)
+        //    {
+        //        Destroy(_segments[i]);
+        //    }
+        //}
+
         // Create Nodes
         _segments = new GameObject[SegmentCount];
 	    for (int i = 0; i < SegmentCount; i++)
@@ -108,7 +117,7 @@ public class RopeScript : MonoBehaviour
 
     /// <summary>
     /// moves <param name="obj2"/> in direction of <param name="obj1"/>
-    /// until <see cref="_lengthDelta"/> is not exceeded
+    /// until <see cref="GetLengthDelta()"/> is not exceeded
     /// </summary>
     /// <param name="obj1"></param>
     /// <param name="obj2"></param>
@@ -123,13 +132,22 @@ public class RopeScript : MonoBehaviour
         {
             return;
         }
+
+
         exceeding.Normalize();
 	    exceeding = exceeding*GetLengthDelta();
-	    exceeding = exceeding - obj2.transform.position;
-        Debug.DrawLine(obj2.transform.position, obj1.transform.position + exceeding, Color.blue);
-        obj2.GetComponent<Rigidbody2D>().AddForce(exceeding/Elasticity);
-        obj1.GetComponent<Rigidbody2D>().AddForce(exceeding/Elasticity);
-	    //obj2.transform.Translate(Vector3.Lerp(Vector3.zero, exceeding, Elasticity));
+	    exceeding = - obj2.transform.position + exceeding + obj1.transform.position;
+
+        var force2 = exceeding/Elasticity;
+        var force1 = -force2;
+
+        obj2.GetComponent<Rigidbody2D>().AddForce(force2);
+        obj1.GetComponent<Rigidbody2D>().AddForce(force1);
+
+        //Debug.DrawRay(obj2.transform.position, force2, Color.blue);
+        //Debug.DrawRay(obj1.transform.position, force1, Color.blue);
+	    
+        //obj2.transform.Translate(Vector3.Lerp(Vector3.zero, exceeding, Elasticity));
 	    //}
     }
 
@@ -141,6 +159,8 @@ public class RopeScript : MonoBehaviour
         var relativeVelocity = vel2 - vel1;
 
         var dampingAmout = relativeVelocity.sqrMagnitude*Damping;
+
+
         obj2.GetComponent<Rigidbody2D>().AddForce(- vel2 * dampingAmout);
         obj1.GetComponent<Rigidbody2D>().AddForce(- vel1 * dampingAmout);
     }
