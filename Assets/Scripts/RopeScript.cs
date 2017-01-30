@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,7 +25,7 @@ public class RopeScript : MonoBehaviour
     [Range(1, 50)]
     public int SegmentCount;
 
-    private GameObject[] _segments;
+    private GameObject[] _segments = new GameObject[0];
 
     /// <summary>
     /// mass of a node
@@ -47,40 +48,46 @@ public class RopeScript : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
-	    InitSegments();
+	    RefreshSegments();
 		UpdateLineRendererPositions();
 
 	}
 
-    void InitSegments()
+    void RefreshSegments()
     {
-        // Delete old Nodes
-        //for (int i = 0; i < _segments.Length; i++)
-        //{
-        //    if (_segments[i] != null)
-        //    {
-        //        Destroy(_segments[i]);
-        //    }
-        //}
+        // create local variables
+        var newSegmentArray = new GameObject[SegmentCount];
+        int previousSegmentCount = _segments.Length;
+        int reusableCount = Math.Min(SegmentCount, previousSegmentCount); // get length of reusable segments
+        for (int i = 0; i < reusableCount; i++)
+        {
+            newSegmentArray[i] = _segments[i];
+        }
 
-        // Create Nodes
-        _segments = new GameObject[SegmentCount];
-	    for (int i = 0; i < SegmentCount; i++)
+        // assign reusable segments and new array size
+        _segments = newSegmentArray;
+        
+        // Create missing Nodes
+        for (int i = reusableCount; i < SegmentCount; i++)
 	    {
-	        _segments[i] = InstanciateSegment(i);
+            // segments array gets larger
+            //if (_segments[i] == null)
+            //{
 
-            // interpolate positions
-	        //_segments[i].transform.position = (EndAnchor.position - StartAnchor.position)*((float)i/SegmentCount);
-	    }
+                //var startEndPosition = (i - previousSegmentCount) / SegmentCount;
+                var startEndPosition = 1;
+                _segments[i] = InstanciateSegment(startEndPosition);
+            //}
+        }
         // Create node rendering
 	    GetComponent<LineRenderer>().numPositions = SegmentCount + 2; // +2 cause of start and end point
     }
 
-    GameObject InstanciateSegment(int number)
+    GameObject InstanciateSegment(float startEndPosition)
     {
         var segment = new GameObject("procedural_rope_segment");
         //segment.tr
-        segment.transform.position = Vector3.Lerp(StartAnchor.transform.position, EndAnchor.transform.position, ((float) number) / SegmentCount);
+        segment.transform.position = Vector3.Lerp(StartAnchor.transform.position, EndAnchor.transform.position, startEndPosition);
 	    segment.AddComponent<Rigidbody2D>();
 	    segment.GetComponent<Rigidbody2D>().mass = GetMassDelta();
 	    segment.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
@@ -93,7 +100,7 @@ public class RopeScript : MonoBehaviour
 	void Update () {
 	    if (_segments.Length != SegmentCount)
 	    {
-	        InitSegments();
+	        RefreshSegments();
 	    }
         UpdateLineRendererPositions();
 		
