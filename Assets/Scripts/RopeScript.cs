@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -22,7 +23,7 @@ public class RopeScript : MonoBehaviour
     [Range(0.001f, 5)]
     public float Elasticity = 0.001f;
 
-    [Range(1, 50)]
+    [Range(2, 50)]
     public int SegmentCount;
 
     private GameObject[] _segments = new GameObject[0];
@@ -62,6 +63,8 @@ public class RopeScript : MonoBehaviour
         for (int i = 0; i < reusableCount; i++)
         {
             newSegmentArray[i] = _segments[i];
+            _segments[i].GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
+            _segments[i].transform.parent = null;
         }
 
         // assign reusable segments and new array size
@@ -70,17 +73,19 @@ public class RopeScript : MonoBehaviour
         // Create missing Nodes
         for (int i = reusableCount; i < SegmentCount; i++)
 	    {
-            // segments array gets larger
-            //if (_segments[i] == null)
-            //{
 
-                //var startEndPosition = (i - previousSegmentCount) / SegmentCount;
-                var startEndPosition = 1;
-                _segments[i] = InstanciateSegment(startEndPosition);
-            //}
+            var startEndPosition = 1;
+            _segments[i] = InstanciateSegment(startEndPosition);
+
         }
+
+        //_segments[0].GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Kinematic;
+        //_segments[0].transform.parent = StartAnchor.transform;
+        //_segments[_segments.Length-1].GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Kinematic;
+        //_segments[_segments.Length-1].transform.parent = EndAnchor.transform;
+
         // Create node rendering
-	    GetComponent<LineRenderer>().numPositions = SegmentCount + 2; // +2 cause of start and end point
+	    GetComponent<LineRenderer>().numPositions = SegmentCount; 
     }
 
     GameObject InstanciateSegment(float startEndPosition)
@@ -108,18 +113,45 @@ public class RopeScript : MonoBehaviour
 
     void FixedUpdate()
     {
-	    AdjustDistance(StartAnchor, _segments[0]);
-        
-        // Simulate Forces
-	    for (int i = 0; i < _segments.Length - 1; i++)
-	    {
-	        var seg1 = _segments[i];
-	        var seg2 = _segments[i+1];
-	        AdjustDistance(seg1, seg2);
-	        Damp(seg1, seg2);
-	    }
 
-	    AdjustDistance(_segments[_segments.Length-1], EndAnchor);
+        
+
+
+        // Simulate Forces
+        for (int i = 1; i < _segments.Length - 2; i++)
+        {
+            var seg1 = _segments[i];
+            var seg2 = _segments[i + 1];
+            SimulateForces(seg1, seg2);
+            Damp(seg1, seg2);
+        }
+
+        if (StartAnchor != null && EndAnchor != null && _segments.Length == 2)
+        {
+            SimulateForces(StartAnchor, EndAnchor);
+        }
+
+        // distiguinsh if anchor point exists or not
+        if (StartAnchor != null)
+        {
+            SimulateForces(StartAnchor, _segments[1]);
+            _segments[0].transform.position = StartAnchor.transform.position;
+        }
+
+        else
+        {
+             SimulateForces(_segments[0], _segments[1]);
+        }
+
+        if (EndAnchor != null)
+        {
+            SimulateForces(EndAnchor, _segments[_segments.Length-2]);
+	        _segments[_segments.Length - 1].transform.position = EndAnchor.transform.position;
+        }
+        else
+        {
+             SimulateForces(_segments[_segments.Length-2], _segments[_segments.Length - 1]);
+        }
     }
 
     /// <summary>
@@ -128,7 +160,7 @@ public class RopeScript : MonoBehaviour
     /// </summary>
     /// <param name="obj1"></param>
     /// <param name="obj2"></param>
-    void AdjustDistance(GameObject obj1, GameObject obj2)
+    void SimulateForces(GameObject obj1, GameObject obj2)
     {
         var distanceVector = obj2.transform.position - obj1.transform.position;
 	    //if (distanceVector.sqrMagnitude > _lengthDeltaSq)
@@ -139,7 +171,6 @@ public class RopeScript : MonoBehaviour
         {
             return;
         }
-
 
         exceeding.Normalize();
 	    exceeding = exceeding*GetLengthDelta();
@@ -179,12 +210,40 @@ public class RopeScript : MonoBehaviour
 
     void UpdateLineRendererPositions()
     {
-        int numPositions = GetComponent<LineRenderer>().numPositions;
-		GetComponent<LineRenderer>().SetPosition(0, StartAnchor.transform.position);
-        for (int i = 0; i < SegmentCount; i++)
+        int positions = _segments.Length;
+        int curPos = 0;
+        GetComponent<LineRenderer>().numPositions = positions;
+
+        //if (StartAnchor != null)
+        //{
+        //    positions++;
+        //    GetComponent<LineRenderer>().numPositions = positions;
+        //    GetComponent<LineRenderer>().SetPosition(0, StartAnchor.transform.position);
+        //}
+
+        //if (EndAnchor != null)
+        //{
+        //    positions++;
+        //    GetComponent<LineRenderer>().numPositions = positions;
+        //    GetComponent<LineRenderer>().SetPosition(positions - 1, EndAnchor.transform.position);
+        //}
+
+        for (int i = 0; i < _segments.Length; i++)
 		{
-		    GetComponent<LineRenderer>().SetPosition(i + 1, _segments[i].transform.position);
+		    GetComponent<LineRenderer>().SetPosition(curPos, _segments[i].transform.position);
+		    curPos++;
 		}
-		GetComponent<LineRenderer>().SetPosition(numPositions - 1, EndAnchor.transform.position);
+
+
+    }
+
+    void OnDrawGizmos()
+    {
+        for (int i = 0; i < _segments.Length; i++)
+		{
+            Gizmos.color = Color.red;
+            Handles.Label(_segments[i].transform.position, i.ToString());
+            Gizmos.DrawSphere(_segments[i].transform.position, 0.1f);
+		}
     }
 }
