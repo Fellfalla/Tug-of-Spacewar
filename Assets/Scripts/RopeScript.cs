@@ -1,7 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+
+#if UNITY_EDITOR
 using UnityEditor;
+#endif 
+
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -20,8 +22,10 @@ public class RopeScript : MonoBehaviour
     [Range(0.0f, 1)]
     public float Damping = 0.01f;
 
-    [Range(0.001f, 5)]
-    public float Elasticity = 0.001f;
+    [Range(0.1f, 10)]
+    public float Elasticity = 0.1f;
+
+    public bool Rigid;
 
     [Range(2, 50)]
     public int SegmentCount;
@@ -113,11 +117,57 @@ public class RopeScript : MonoBehaviour
 
     void FixedUpdate()
     {
-
+        if (Rigid)
+        {
+            DoRigidSimulation();
+        }
+        else
+        {
+            DoForceSimulation();
+        }
         
+    }
 
+    Vector3 GetExceeding(GameObject obj1, GameObject obj2)
+    {
+        var distanceVector = obj2.transform.position - obj1.transform.position;
+	    //if (distanceVector.sqrMagnitude > _lengthDeltaSq)
+	    //{
 
-        // Simulate Forces
+	    var exceeding = distanceVector;
+        if (exceeding.magnitude < GetLengthDelta())
+        {
+            return Vector3.zero;
+        }
+
+        exceeding.Normalize();
+	    exceeding = exceeding*GetLengthDelta();
+	    exceeding = - obj2.transform.position + exceeding + obj1.transform.position;
+        return exceeding;
+    }
+
+    void DoRigidSimulation()
+    {
+         _segments[0].transform.Translate( GetExceeding(StartAnchor, _segments[0]));
+        for (int i = 0; i < _segments.Length - 1; i++)
+        {
+            var exceeding = GetExceeding(_segments[i], _segments[i+1]);
+            
+            // just translate and do not add forces
+            var trans2 = exceeding;
+
+            //_segments[i].transform.Translate(trans1);
+            _segments[i+1].transform.Translate(trans2);
+        }
+        
+         EndAnchor.transform.Translate( GetExceeding(_segments[_segments.Length - 1], EndAnchor));
+        // todo: add force to StartAnchor
+        //SimulateForces(StartAnchor, _segments[0]);
+        //SimulateForces(_segments[_segments.Length - 1], EndAnchor);
+    }
+
+    void DoForceSimulation()
+    {
         for (int i = 1; i < _segments.Length - 2; i++)
         {
             var seg1 = _segments[i];
@@ -129,6 +179,9 @@ public class RopeScript : MonoBehaviour
         if (StartAnchor != null && EndAnchor != null && _segments.Length == 2)
         {
             SimulateForces(StartAnchor, EndAnchor);
+            _segments[0].transform.position = StartAnchor.transform.position;
+	        _segments[_segments.Length - 1].transform.position = EndAnchor.transform.position;
+            return;
         }
 
         // distiguinsh if anchor point exists or not
@@ -152,6 +205,7 @@ public class RopeScript : MonoBehaviour
         {
              SimulateForces(_segments[_segments.Length-2], _segments[_segments.Length - 1]);
         }
+
     }
 
     /// <summary>
@@ -162,31 +216,17 @@ public class RopeScript : MonoBehaviour
     /// <param name="obj2"></param>
     void SimulateForces(GameObject obj1, GameObject obj2)
     {
-        var distanceVector = obj2.transform.position - obj1.transform.position;
-	    //if (distanceVector.sqrMagnitude > _lengthDeltaSq)
-	    //{
+        var exceeding = GetExceeding(obj1, obj2);
 
-	    var exceeding = distanceVector;
-        if (exceeding.magnitude < GetLengthDelta())
-        {
-            return;
-        }
-
-        exceeding.Normalize();
-	    exceeding = exceeding*GetLengthDelta();
-	    exceeding = - obj2.transform.position + exceeding + obj1.transform.position;
-
-        var force2 = exceeding/Elasticity;
+        var force2 = exceeding/(Elasticity/SegmentCount);
         var force1 = -force2;
 
         obj2.GetComponent<Rigidbody2D>().AddForce(force2);
         obj1.GetComponent<Rigidbody2D>().AddForce(force1);
-
+            
         Debug.DrawRay(obj2.transform.position, force2/100, Color.blue);
         Debug.DrawRay(obj1.transform.position, force1/100, Color.blue);
 	    
-        //obj2.transform.Translate(Vector3.Lerp(Vector3.zero, exceeding, Elasticity));
-	    //}
     }
 
     void Damp(GameObject obj1, GameObject obj2)
@@ -242,7 +282,9 @@ public class RopeScript : MonoBehaviour
         for (int i = 0; i < _segments.Length; i++)
 		{
             Gizmos.color = Color.red;
+            #if UNITY_EDITOR
             Handles.Label(_segments[i].transform.position, i.ToString());
+            #endif
             Gizmos.DrawSphere(_segments[i].transform.position, 0.1f);
 		}
     }
