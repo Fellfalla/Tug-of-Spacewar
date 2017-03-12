@@ -28,6 +28,11 @@ public class ThrowRope : MonoBehaviour {
 
 	        var hook = Instantiate(HookPrefab, transform.position, Quaternion.identity);
 
+            var offset = direction;
+            offset.Normalize();
+            offset.Scale(hook.GetComponent<Collider2D>().bounds.size);
+            hook.transform.Translate(offset);
+            hook.SetActive(true);
 	        var throwForce = direction*ThrowForce;
 
 	        hook.GetComponent<Rigidbody2D>().AddForce(throwForce);
@@ -35,6 +40,8 @@ public class ThrowRope : MonoBehaviour {
             var rope = Instantiate(RopePrefab, transform.position, Quaternion.identity);
             rope.GetComponent<RopeScript>().StartAnchor = gameObject;
             rope.GetComponent<RopeScript>().EndAnchor = hook;
+            rope.SetActive(true);
 	    }
 	}
+
 }

@@ -22,7 +22,7 @@ public class RopeScript : MonoBehaviour
     [Range(0.0f, 1)]
     public float Damping = 0.01f;
 
-    [Range(0.1f, 10)]
+    [Range(0.01f, 10)]
     public float Elasticity = 0.1f;
 
     public bool Rigid;
